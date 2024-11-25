@@ -1,33 +1,42 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
+// Protect middleware: Verifies token and attaches user to `req`
 const protect = async (req, res, next) => {
     let token;
 
-    if (
-        req.headers.authorization &&
-        req.headers.authorization.startsWith('Bearer')
-    ) {
+    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
         try {
-            // Get token from header
+            // Extract token
             token = req.headers.authorization.split(' ')[1];
 
-            // Verify token
+            // Decode token
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-            // Get user from the token
+            // Find user from token and exclude password from selection
             req.user = await User.findById(decoded.id).select('-password');
 
-            next();
-        } catch (error) {
-            console.error('Error with authentication middleware', error);
-            res.status(401).json({ message: 'Not authorized' });
-        }
-    }
+            if (!req.user) {
+                return res.status(404).json({ message: 'User not found' });
+            }
 
-    if (!token) {
-        res.status(401).json({ message: 'Not authorized, no token' });
+            next(); // Proceed to the next middleware or route handler
+        } catch (error) {
+            console.error('Token verification error:', error.message);
+            res.status(401).json({ message: 'Not authorized, invalid token' });
+        }
+    } else {
+        res.status(401).json({ message: 'Not authorized, no token provided' });
     }
 };
 
-module.exports = { protect };
+// Admin middleware: Checks if the user is an admin
+const admin = (req, res, next) => {
+    if (req.user && req.user.isAdmin) {
+        next(); // User is an admin; proceed
+    } else {
+        res.status(403).json({ message: 'Access denied, admin only' }); // Forbidden
+    }
+};
+
+module.exports = { protect, admin };
