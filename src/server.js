@@ -8,6 +8,7 @@ const orderRoutes = require('./routes/orderRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const productRoutes = require('./routes/productRoutes');
+const discountRoutes = require('./routes/discountRoutes');
 
 // Initialize app and load environment variables
 dotenv.config();
@@ -27,11 +28,14 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/products', productRoutes);
+app.use('/api', discountRoutes);
 
 // Test route
 app.get('/', (req, res) => {
     res.send('Welcome to the E-commerce Backend!');
 });
+
+
 
 
 // For Stripe webhook
