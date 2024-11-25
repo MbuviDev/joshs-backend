@@ -8,7 +8,6 @@ const orderRoutes = require('./routes/orderRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const productRoutes = require('./routes/productRoutes');
-const customRoutes = require('./routes/customRoutes');
 
 // Initialize app and load environment variables
 dotenv.config();
@@ -32,7 +31,7 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/products', productRoutes);
-app.use('/api', customRoutes);
+
 
 
 // Test route
