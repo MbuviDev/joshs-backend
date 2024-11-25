@@ -5,7 +5,7 @@ const cloudinary = require("../config/cloudinary");
 const getAllProducts = async (req, res) => {
     try {
         const products = await Product.find();
-        res.json(products);
+        res.status(200).json(products);
     } catch (error) {
         console.error('Error fetching products:', error);
         res.status(500).json({ message: 'Server error' });
@@ -33,20 +33,17 @@ const createProduct = async (req, res) => {
             return res.status(403).json({ message: 'Access denied' });
         }
 
-        let imageUrl = null;
+        let imageUrl = " ";
 
         // If an image file is uploaded, upload it to Cloudinary
         if (req.file) {
-            const result = await new Promise((resolve, reject) => {
-                const stream = cloudinary.uploader.upload_stream(
-                    { folder: "kitenge-products" },
-                    (error, result) => {
-                        if (error) reject(error);
-                        resolve(result);
-                    }
-                );
-                stream.end(req.file.buffer);
-            });
+          const result = await cloudinary.uploader.upload_stream(
+              { folder: "kitenge-products" },
+              (error, result) => {
+                  if (error) throw error;
+                  return result;
+              }
+          ).end(req.file.buffer);
 
             imageUrl = result.secure_url;
         }
@@ -58,7 +55,7 @@ const createProduct = async (req, res) => {
             description,
             category,
             stock,
-            image: imageUrl || '', // If no image is provided, leave it blank
+            image: imageUrl, // If no image is provided, leave it blank
         });
 
         await newProduct.save();
