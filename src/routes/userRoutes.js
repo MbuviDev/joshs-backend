@@ -2,7 +2,7 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const User = require('../models/User');
-
+const {protect} = require('../middleware/auth')
 const router = express.Router();
 
 // Register user
@@ -40,6 +40,31 @@ router.post('/login', async (req, res) => {
         res.status(200).json({ token });
     } catch (error) {
         res.status(500).json({ message: 'Server error' });
+    }
+});
+
+
+router.post("/cart", protect, async (req, res) => {
+    const { productId, quantity } = req.body;
+
+    try {
+        const product = await Product.findById(productId);
+        if (!product) return res.status(404).json({ message: "Product not found" });
+
+        const user = await User.findById(req.user.id);
+        const existingItem = user.cart.find((item) => item.product.toString() === productId);
+
+        if (existingItem) {
+            existingItem.quantity += quantity;
+        } else {
+            user.cart.push({ product: productId, quantity });
+        }
+
+        await user.save();
+        res.status(201).json(user.cart);
+    } catch (error) {
+        console.error("Error adding to cart:", error);
+        res.status(500).json({ message: "Server error" });
     }
 });
 

@@ -1,24 +1,54 @@
 const express = require('express');
 const Product = require('../models/Product');
 const protect = require('../middleware/auth'); // For protected routes
-const router = express.Router();
-const upload = require('../middleware/upload')
+const multer = require("multer");
+const cloudinary = require("../config/cloudinary");
 
-// Create a product (Admin-only)
-router.post('/', protect, async (req, res) => {
-    const { name, description, price, stock, category, image } = req.body;
+const router = express.Router();
+
+// Multer setup for file uploads
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
+
+// Create or Add a product with image upload (Admin-only)
+router.post('/', protect, upload.single('image'), async (req, res) => {
+    const { name, description, price, stock, category } = req.body;
 
     try {
         if (!req.user.isAdmin) {
             return res.status(403).json({ message: 'Access denied' });
         }
 
-        const newProduct = new Product({ name, description, price, stock, category, image });
+        let imageUrl = null;
+
+        // If an image file is uploaded, upload it to Cloudinary
+        if (req.file) {
+            const result = await cloudinary.uploader.upload_stream(
+                { folder: "kitenge-products" },
+                (error, result) => {
+                    if (error) throw error;
+                    return result;
+                }
+            ).end(req.file.buffer);
+
+            imageUrl = result.secure_url;
+        }
+
+        // Save product to the database
+        const newProduct = new Product({
+            name,
+            price,
+            description,
+            category,
+            stock,
+            image: imageUrl || '', // If no image is provided, leave it blank
+        });
+
         await newProduct.save();
         res.status(201).json(newProduct);
     } catch (error) {
-        console.error('Error creating product:', error);
-        res.status(500).json({ message: 'Server error' });
+        console.error("Error adding product:", error);
+        res.status(500).json({ message: "Server error" });
     }
 });
 
@@ -63,28 +93,6 @@ router.put('/:id', protect, async (req, res) => {
         res.json(updatedProduct);
     } catch (error) {
         console.error('Error updating product:', error);
-        res.status(500).json({ message: 'Server error' });
-    }
-});
-
-// Add a product with image upload
-router.post('/', upload.single('image'), async (req, res) => {
-    const { name, description, price, stock, category } = req.body;
-
-    try {
-        const newProduct = new Product({
-            name,
-            description,
-            price,
-            stock,
-            category,
-            image: req.file.path, // Cloudinary URL
-        });
-
-        await newProduct.save();
-        res.status(201).json(newProduct);
-    } catch (error) {
-        console.error('Error adding product:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });
