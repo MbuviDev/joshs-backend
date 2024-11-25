@@ -8,7 +8,7 @@ const orderRoutes = require('./routes/orderRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const productRoutes = require('./routes/productRoutes');
-const discountRoutes = require('./routes/discountRoutes');
+const customRoutes = require('./routes/customRoutes');
 
 // Initialize app and load environment variables
 dotenv.config();
@@ -19,7 +19,11 @@ const connectDB = require('./config/db');
 connectDB();
 
 // Middleware
-app.use(cors());
+app.use(cors(
+    {
+        origin : 'https://joshs-kitenge-prototype.vercel.app'
+    }
+));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use('/api/users', userRoutes);
@@ -28,7 +32,8 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/products', productRoutes);
-app.use('/api', discountRoutes);
+app.use('/api', customRoutes);
+
 
 // Test route
 app.get('/', (req, res) => {
