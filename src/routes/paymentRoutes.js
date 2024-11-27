@@ -1,5 +1,4 @@
 const express = require('express');
-const stripe = require('../config/stripe');
 const Order = require('../models/Order');
 const { protect } = require('../middleware/auth');
 const router = express.Router();
