@@ -1,11 +1,14 @@
 const Product = require('../models/Product');
 
-
 // Fetch all products
 const getAllProducts = async (req, res) => {
     try {
         const products = await Product.find();
-        res.status(200).json(products);
+        const updatedProducts = products.map((product) => ({
+            ...product.toObject(),
+            image: `https://joshskitenge.com/images/${product.image}`, // Prepend the base URL to the image field
+        }));
+        res.status(200).json(updatedProducts);
     } catch (error) {
         console.error('Error fetching products:', error.message);
         res.status(500).json({ message: 'Server error while fetching products' });
@@ -17,42 +20,28 @@ const getProductById = async (req, res) => {
     try {
         const product = await Product.findById(req.params.id);
         if (!product) return res.status(404).json({ message: 'Product not found' });
-        res.status(200).json(product);
+        const updatedProduct = {
+            ...product.toObject(),
+            image: `https://joshskitenge.com/images/${product.image}`, // Add the full image URL
+        };
+        res.status(200).json(updatedProduct);
     } catch (error) {
         console.error('Error fetching product:', error.message);
         res.status(500).json({ message: 'Server error while fetching product' });
     }
 };
 
-// Create a product with image upload (Admin-only)
+// Create a product with image (Admin-only)
 const createProduct = async (req, res) => {
-    const { name, description, price, stock, category } = req.body;
+    const { name, description, price, stock, category, image } = req.body;
 
-    if (!name || !price || !category) {
-        return res.status(400).json({ message: 'Name, price, and category are required' });
+    if (!name || !price || !category || !image) {
+        return res.status(400).json({ message: 'Name, price, category, and image are required' });
     }
 
     try {
         if (!req.user || !req.user.isAdmin) {
             return res.status(403).json({ message: 'Access denied' });
-        }
-
-        let imageUrl = "";
-
-        // If an image file is uploaded, upload it to Cloudinary
-        if (req.file) {
-            const uploadResult = await new Promise((resolve, reject) => {
-                const stream = cloudinary.uploader.upload_stream(
-                    { folder: "kitenge-products" },
-                    (error, result) => {
-                        if (error) reject(error);
-                        resolve(result);
-                    }
-                );
-                stream.end(req.file.buffer);
-            });
-
-            imageUrl = uploadResult.secure_url;
         }
 
         // Save product to the database
@@ -62,14 +51,14 @@ const createProduct = async (req, res) => {
             price,
             stock,
             category,
-            image: imageUrl, // Assign Cloudinary URL or leave blank
+            image, // Save only the filename (e.g., "image.jpg")
         });
 
         const savedProduct = await newProduct.save();
         res.status(201).json(savedProduct);
     } catch (error) {
-        console.error("Error creating product:", error.message);
-        res.status(500).json({ message: "Server error while creating product" });
+        console.error('Error creating product:', error.message);
+        res.status(500).json({ message: 'Server error while creating product' });
     }
 };
 
@@ -87,7 +76,12 @@ const updateProduct = async (req, res) => {
 
         if (!updatedProduct) return res.status(404).json({ message: 'Product not found' });
 
-        res.status(200).json(updatedProduct);
+        const responseProduct = {
+            ...updatedProduct.toObject(),
+            image: `https://joshskitenge.com/images/${updatedProduct.image}`, // Include full image URL
+        };
+
+        res.status(200).json(responseProduct);
     } catch (error) {
         console.error('Error updating product:', error.message);
         res.status(500).json({ message: 'Server error while updating product' });
